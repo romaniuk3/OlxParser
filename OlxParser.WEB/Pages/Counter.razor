@@ -1,0 +1,98 @@
+﻿@page "/"
+@using OlxParser.WEB.Models;
+@using OlxParser.WEB.Services.Contracts;
+@using OlxParser.WEB.StateContainers;
+@inject IJSRuntime JS
+@inject IHtmlParseService _parseService
+@inject FlatStateContainer _flatContainer
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<PageTitle>Olx Notifier</PageTitle>
+
+<h1>Olx notifier</h1>
+<MudTextField Style="margin-bottom: 20px;" @bind-Value="CustomUrl" Label="URL" Placeholder="https://olx.ua/" HelperText="If no URL entered, the default will be used" Variant="Variant.Text" />
+
+@if (IsAppRunning)
+{
+    <button style="margin-right: 20px;" class="btn btn-warning" @onclick="StopListener">Stop searching</button>
+} else
+{
+    <button style="margin-right: 20px;" class="btn btn-primary" @onclick="StartListener">Start searching</button>
+}
+<button class="btn btn-warning" @onclick="ClearTable">Clear Table</button>
+
+@if (flatInfos.Count != 0)
+{
+    <MudTable Items="@flatInfos" OnRowClick="@NavigateToUrl" Dense="false" Hover="true" T="ParseResult">
+        <HeaderContent>
+            <MudTh>URL</MudTh>
+            <MudTh>Date added</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Flat URL">@context.FlatUrl</MudTd>
+            <MudTd DataLabel="Date added">@context.CreationDateTime</MudTd>
+        </RowTemplate>
+    </MudTable>
+} else
+{
+    <h1 style="margin-top: 30px;">New flats will show up here</h1>
+}
+
+@code {
+    private List<ParseResult> flatInfos = new();
+    private string NewFlatUrl;
+    private bool IsSoundPlaying;
+    private bool IsAppRunning;
+    public string CustomUrl { get; set; } = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        _flatContainer.FlatStateChanged += HandleStateChange;
+    }
+
+    private void HandleStateChange()
+    {
+        var flatInfo = _flatContainer.FlatInfo;
+        if (flatInfo != null)
+        {
+            flatInfos.Add(flatInfo);
+            PlaySound();
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task NavigateToUrl(TableRowClickEventArgs<ParseResult> flatInfo)
+    {
+        await JS.InvokeVoidAsync("open", flatInfo.Item.FlatUrl, "_blank");
+    }
+
+    private void StartListener()
+    {
+        _parseService.RunOlxListener(CustomUrl);
+        IsAppRunning = true;
+    }
+
+    private void StopListener()
+    {
+        _parseService.StopOlxListener();
+        IsAppRunning = false;
+    }
+
+    private async void PlaySound()
+    {
+        await JS.InvokeVoidAsync("audioInterop.playNotificationSound");
+    }
+
+    public void ClearTable()
+    {
+        flatInfos.Clear();
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        _flatContainer.FlatStateChanged -= HandleStateChange;
+    }
+}
