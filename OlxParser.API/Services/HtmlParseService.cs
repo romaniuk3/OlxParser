@@ -44,34 +44,11 @@ namespace OlxParser.API.Services
                 {
                     creationDateTime = date;
                     return true;
-                    //return IsNewDate((DateTime)date);
                 }
             }
 
             return false;
         }
-
-        /*
-        private bool IsNewDate(DateTime date)
-        {
-            if (oldDate == null)
-            {
-                oldDate = date;
-                return false;
-            }
-
-            int compareResult = DateTime.Compare((DateTime)oldDate, date);
-            if (compareResult == 0) return false;
-
-            if (compareResult < 0)
-            {
-                oldDate = date;
-                SendNewFlatNotification();
-                return true;
-            }
-
-            return false;
-        }*/
 
         private void SetFlatUrl(HtmlNode element)
         {
@@ -81,12 +58,6 @@ namespace OlxParser.API.Services
             {
                 flatUrl = anchorTag.GetAttributeValue("href", "");
             }
-        }
-
-        private void SendNewFlatNotification()
-        {
-            Console.WriteLine("NEW FLAT ADDED!");
-            Console.WriteLine("New FLAT URL: " + flatUrl);
         }
 
         private string? GetLocationDateString(HtmlNode element)
